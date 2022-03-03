@@ -1,0 +1,62 @@
+{
+    "plattform": "RTP-QA",
+    "formatVersion": "1.0",
+    "version": "1",
+    "bestallningsTidpunkt": "2022-03-03T17:46:01+0100",
+    "utforare": "SLL RTP",
+    "genomforandeTidpunkt": "2022-03-03T17:46:01+0100",
+    "inkludera": {
+        "tjanstekontrakt": [
+            {
+                "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1",
+                "beskrivning": "Submission of a request to a healtcare facility",
+                "majorVersion": 1
+            },
+            {
+                "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1",
+                "beskrivning": "Submission of a request to a healtcare facility",
+                "majorVersion": 1
+            },
+            {
+                "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1",
+                "beskrivning": "Submission of a request to a healtcare facility",
+                "majorVersion": 1
+            }
+        ],
+        "tjanstekomponenter": [
+            {
+                "hsaId": "SE2321000016-XXXX",
+                "beskrivning": "Region Stockholm -- FEJK -- Remissystem"
+            }
+        ],
+        "logiskadresser": [
+            {
+                "hsaId": "FEJK-MOTTAGNING-SLL-HSA-ID",
+                "beskrivning": "FEJK-MOTTAGNING-SLL"
+            }
+        ],
+        "vagval": [
+            {
+                "adress": "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+                "logiskAdress": "FEJK-MOTTAGNING-SLL-HSA-ID",
+                "tjanstekontrakt": "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1",
+                "rivtaprofil": "RIVTABP21",
+                "tjanstekomponent": "SE2321000016-XXXX"
+            },
+            {
+                "adress": "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+                "logiskAdress": "FEJK-MOTTAGNING-SLL-HSA-ID",
+                "tjanstekontrakt": "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1",
+                "rivtaprofil": "RIVTABP21",
+                "tjanstekomponent": "SE2321000016-XXXX"
+            },
+            {
+                "adress": "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+                "logiskAdress": "FEJK-MOTTAGNING-SLL-HSA-ID",
+                "tjanstekontrakt": "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1",
+                "rivtaprofil": "RIVTABP21",
+                "tjanstekomponent": "SE2321000016-XXXX"
+            }
+        ]
+    }
+}
