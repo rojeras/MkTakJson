@@ -14,7 +14,7 @@ def printerr(text):
 ##################################################################################################
 
 
-def get_order_header(target_tp, target_envir):
+def get_header(target_tp, target_envir):
 
     plattform = f'{target_tp}-{target_envir}'
 
@@ -100,70 +100,154 @@ def dump_service_producers():
 def create_rtp_files(envir: str, phase: str) -> None:
     """Will create json files for RTP"""
 
-    body = get_order_header("RTP", envir)
-    contracts_ids = get_contracts_ids()
+    # Prepare placeholders for update and rollback files
+    logiskaAdresser = []
 
+    update = get_header("RTP", envir)
+    update_include = {}
+    update_vagval_include = []
+    update_vagval_exclude = []
+    update_exclude = {}
+
+    rollback = get_header("RTP", envir)
+    rollback_include = {}
+    rollback_vagval_include = []
+    rollback_vagval_exclude = []
+    rollback_exclude = {}
+
+    # Calculate base information
+    contracts_ids = get_contracts_ids()
     tp_id = get_connection_point_id(envir)
 
     cosmic_hsaid = PRODUCER_HSA_ID[f"COSMIC-{envir}"]
+    cosmic_description = PRODUCER_DESCRIPTION[f"COSMIC-{envir}"]
 
-    include = {}
-    # include["tjanstekontrakt"] = get_json_contracts()
-    vagval = []
-    logiskaAdresser = []
+    ntjp_hsaid = PRODUCER_HSA_ID[f"NTJP-{envir}"]
+    ntjp_description = PRODUCER_DESCRIPTION[f"NTJP-{envir}"]
 
-    exclude = {}
+    if (envir == "QA"):
+        ntjp_producer_hsa = PRODUCER_HSA_ID["NTJP-QA"]
+        cosmic_producer_hsa = PRODUCER_HSA_ID["COSMIC-QA"]
+    elif(envir == "PROD"):
+        ntjp_producer_hsa = PRODUCER_HSA_ID["NTJP-PROD"]
+        cosmic_producer_hsa = PRODUCER_HSA_ID["COSMIC-PROD"]
 
-    response = requests.get(
+
+    # Get the ServiceProductions for the RTP QA or PROD TAK
+    service_productions = requests.get(
         f"{TAKAPI_BASE_URL}/serviceProductions?connectionPointId={tp_id}&include=serviceContract%2ClogicalAddress%2CphysicalAddress,serviceProducer")
 
-    responseJson = response.json()
+    production_json = service_productions.json()
+    #service_productions_unicode = requests.utils.get_unicode_from_response(service_productions)
+    #production_json = json.loads(service_productions_unicode)
 
-    if (PHASE == "UPDATE"):
-        """All routes to COSMIC should change to NTJP"""
-        
-        for route in responseJson:
-            if (route["serviceContract"]["id"] in contracts_ids and route["serviceProducer"]["hsaId"] == cosmic_hsaid): 
-                # print(route)
+    # Loop thorugh all routes to COSMIC should change to NTJP
+    for production in production_json:
 
-                namespace = route["serviceContract"]["namespace"]
+        # Find production in the request domain pointing to Capio COSMIC
+        if (production["serviceContract"]["id"] in contracts_ids and production["serviceProducer"]["hsaId"] == cosmic_hsaid):
+            # print(route)
 
-                # In RTP, the producer COSMIC should change to NTJP. Different producer och URL.
-                if (envir == "QA"):
-                    producer_hsa = PRODUCER_HSA_ID["NTJP-QA"]
-                elif(envir == "PROD"):
-                    producer_hsa = PRODUCER_HSA_ID["NTJP-PROD"]
+            namespace = production["serviceContract"]["namespace"]
 
-                producer_url = get_producer_url("NTJP", envir, namespace)
+            logiskAdress = {
+                "hsaId": production["logicalAddress"]["logicalAddress"],
+                "beskrivning": production["logicalAddress"]["description"]
+            }
 
-                logiskaAdresser.append({ 
-                    "hsaId" : route["logicalAddress"]["logicalAddress"],
-                    "beskrivning" : route["logicalAddress"]["description"]
-                })
+            if (logiskAdress not in logiskaAdresser):
+                logiskaAdresser.append(logiskAdress)
+
+            ##################################################################
+            # Update
+            """During update the producer COSMIC should change to NTJP. Different producer and URL"""
+
+            # The exclude should exclude old routes (vagval) pointing to cosmic
+            update_vagval_exclude.append({
+                "tjanstekomponent": cosmic_producer_hsa,
+                "logiskAdress": production["logicalAddress"]["logicalAddress"],
+                "tjanstekontrakt": namespace,
+                "rivtaprofil": "RIVTABP21"
+            })
+
+            ntjp_producer_url = get_producer_url("NTJP", envir, namespace)
+
+            # The new routes (vagval) should point to NTJP
+            update_vagval_include.append({
+                "tjanstekomponent": ntjp_producer_hsa,
+                "adress": ntjp_producer_url,
+                "logiskAdress": production["logicalAddress"]["logicalAddress"],
+                "tjanstekontrakt": namespace,
+                "rivtaprofil": "RIVTABP21"
+            })
+
+                     ##################################################################
+            # Rollback
+            """During rollback the producer NTJP should be changed (back) to COSMIC"""
+            rollback_vagval_exclude.append({
+                "tjanstekomponent": ntjp_producer_hsa,
+                "logiskAdress": production["logicalAddress"]["logicalAddress"],
+                "tjanstekontrakt": namespace,
+                "rivtaprofil": "RIVTABP21"
+            })
+
+            cosmic_producer_url = get_producer_url("COSMIC", envir, namespace)
+
+            # The new routes (vagval) should point to NTJP
+            rollback_vagval_include.append({
+                "tjanstekomponent": cosmic_producer_hsa,
+                "adress": cosmic_producer_url,
+                "logiskAdress": production["logicalAddress"]["logicalAddress"],
+                "tjanstekontrakt": namespace,
+                "rivtaprofil": "RIVTABP21"
+            })
 
 
+    # Finally, create the files
 
-                vagval.append ({
-                    "tjanstekomponent": producer_hsa,
-                    "adress" : producer_url,
-                    "logiskAdress" : route["logicalAddress"]["logicalAddress"],
-                    "tjanstekontrakt": "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1",
-                    "rivtaprofil": "RIVTABP21"
-                })
-        
-        include["logiskadresser"] = logiskaAdresser
-        include["vagval"] = vagval
-        
+    update_exclude["vagval"] = update_vagval_exclude
+    rollback_exclude["vagval"] = rollback_vagval_exclude
 
-    elif (PHASE == "ROLLBACK"):
-        printerr("Not yet implemented in create_rtp_files()")
-        include["tjanstekomponenter"] = {
-                    "hsaId" : route["serviceProducer"]["hsaId"],
-                    "beskrivning" : route["serviceProducer"]["description"]
-                }
+    update_include["tjanstekomponenter"] = [
+        {
+            "hsaId": cosmic_hsaid,
+            "beskrivning": cosmic_description
+        },
+        {
+            "hsaId": ntjp_hsaid,
+            "beskrivning": ntjp_description
+        }
 
-    print("------------------------------")
-    print(json.dumps(include))
+    ]
+    rollback_include["tjanstekomponenter"] = update_include["tjanstekomponenter"]
+
+    update_include["tjanstekontrakt"] = get_json_contracts()
+    rollback_include["tjanstekontrakt"] = get_json_contracts()
+
+    update_include["logiskadresser"] = logiskaAdresser
+    rollback_include["logiskadresser"] = logiskaAdresser
+
+    update_include["vagval"] = update_vagval_include
+    rollback_include["vagval"] = rollback_vagval_include
+
+    if (phase == "UPDATE"):
+        update = get_header("RTP", envir)
+        update["exkludera"] = update_exclude
+        update["inkludera"] = update_include
+
+        printerr(f"Generating UPDATE file for RTP-{envir} ")
+        print(json.dumps(update, ensure_ascii=False))
+
+    elif (phase == "ROLLBACK"): 
+        rollback = get_header("RTP", envir)
+        rollback["exkludera"] = rollback_exclude
+        rollback["inkludera"] = rollback_include
+
+        printerr(f"Generating ROLLBACK for RTP-{envir} ")
+        print(json.dumps(rollback, ensure_ascii=False))
+
+    # print(json.dumps(update_include, ensure_ascii=False))
+    # print("here is your checkmark: " + u'\u2713');
 
 ##################################################################################################
 
@@ -189,6 +273,8 @@ def get_json_contracts():
     ]
 
 ##################################################################################################
+
+
 def get_producer_url(producer, envir, namespace):
 
     key = f"{producer}-{envir}"
@@ -205,11 +291,12 @@ def get_producer_url(producer, envir, namespace):
 
 ##################################################################################################
 
+
 def create_sample_files(target_tp, target_envir, phase):
 
     printerr(f"Sample {phase} file for {target_tp}-{target_envir} \n")
 
-    body = get_order_header(target_tp, target_envir)
+    body = get_header(target_tp, target_envir)
 
     if (phase == "UPDATE"):
         include = {}
@@ -341,6 +428,15 @@ PRODUCER_HSA_ID = {"COSMIC-QA": "SE5565189692-B05",
                    "RTP-QA": "SE2321000016-AMCV",
                    "RTP-PROD": "SE2321000016-FH3P"}
 
+PRODUCER_DESCRIPTION = {"COSMIC-QA": "Capio AB -- Cosmic -- St Görans sjukhus",
+                        "COSMIC-PROD": "Capio AB -- Cosmic -- Capio St Göran",
+                        "TAKECARE-QA": "Region Stockholm -- EDI -- TakeCare",
+                        "TAKECARE-PROD": "Region Stockholm -- EDI som tjänsteproducent -- Ny tjänsteproducent fr o m 2021-10-12, har ersatt tidigare producent ""...4HR3"".",
+                        "NTJP-QA": "Inera AB -- Tjänsteplattform -- Nationella tjänster",
+                        "NTJP-PROD": "Inera AB -- Tjänsteplattform -- Nationella tjänster",
+                        "RTP-QA": "Region Stockholm -- Tjänsteplattform som tjänsteproducent -- Tjänsteproducent fr o m 2021-09-22, ersätter ""...-A2G4"" som producent!",
+                        "RTP-PROD": "Region Stockholm -- Tjänsteplattform som tjänsteproducent -- Tjänsteproducent fr o m 2021-09-22, ersätter ""...-7P35"" som producent!"}
+
 PRODUCER_URL = {"COSMIC-QA": [
     "https://testcosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequest",
     "https://testcosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequestConfirmation",
@@ -396,7 +492,7 @@ SERVICE_CONTRACT_NAMESPACE = {
 if (create_sample and (PHASE == "UPDATE" or PHASE == "REMOVE")):
     create_sample_files(TARGET_TP, TARGET_ENVIRONMENT, PHASE)
 
-elif (TARGET_TP == "RTP" and PHASE == "UPDATE"):
+elif (TARGET_TP == "RTP"):
     create_rtp_files(TARGET_ENVIRONMENT, PHASE)
 else:
     printerr("Not yet implemented")
