@@ -202,7 +202,6 @@ def create_rtp_files(envir: str, phase: str) -> None:
                 "rivtaprofil": "RIVTABP21"
             })
 
-
     # Finally, create the files
 
     update_exclude["vagval"] = update_vagval_exclude
@@ -232,7 +231,7 @@ def create_rtp_files(envir: str, phase: str) -> None:
 
     if (phase == "UPDATE"):
         update = get_header("RTP", envir)
-        update["exkludera"] = update_exclude
+        # update["exkludera"] = update_exclude
         update["inkludera"] = update_include
 
         printerr(f"Generating UPDATE file for RTP-{envir} ")
@@ -240,7 +239,7 @@ def create_rtp_files(envir: str, phase: str) -> None:
 
     elif (phase == "ROLLBACK"): 
         rollback = get_header("RTP", envir)
-        rollback["exkludera"] = rollback_exclude
+        # rollback["exkludera"] = rollback_exclude
         rollback["inkludera"] = rollback_include
 
         printerr(f"Generating ROLLBACK for RTP-{envir} ")
