@@ -97,6 +97,136 @@ def dump_service_producers():
 ##################################################################################################
 
 
+def create_ntjp_files(envir: str) -> None:
+    """Will create json files for NTJP"""
+
+    # Prepare placeholders for update file
+    logiskaAdresser = []
+
+    update = get_header("NTJP", envir)
+    update_include = {}
+    update_vagval_include = []
+
+    # Calculate base information
+    contracts_ids = get_contracts_ids()
+    tp_id = get_connection_point_id(envir)
+
+    # Producers
+    cosmic_hsaid = PRODUCER_HSA_ID[f"COSMIC-{envir}"]
+    cosmic_description = PRODUCER_DESCRIPTION[f"COSMIC-{envir}"]
+
+    takecare_hsaid = PRODUCER_HSA_ID[f"TAKECARE-{envir}"]
+    takecare_description = PRODUCER_DESCRIPTION[f"TAKECARE-{envir}"]
+
+    rtp_hsaid = PRODUCER_HSA_ID[f"RTP-{envir}"]
+    rtp_description = PRODUCER_DESCRIPTION[f"RTP-{envir}"]
+    
+    ntjp_hsaid = PRODUCER_HSA_ID[f"NTJP-{envir}"]
+    ntjp_description = PRODUCER_DESCRIPTION[f"NTJP-{envir}"]
+
+    if (envir == "QA"):
+        rtp_producer_hsa = PRODUCER_HSA_ID["RTP-QA"]
+        cosmic_producer_hsa = PRODUCER_HSA_ID["COSMIC-QA"]
+    elif(envir == "PROD"):
+        rtp_producer_hsa = PRODUCER_HSA_ID["RTP-PROD"]
+        cosmic_producer_hsa = PRODUCER_HSA_ID["COSMIC-PROD"]
+
+
+    # Get the ServiceProductions for the NTJP QA or PROD TAK
+    service_productions = requests.get(
+        f"{TAKAPI_BASE_URL}/serviceProductions?connectionPointId={tp_id}&include=serviceContract%2ClogicalAddress%2CphysicalAddress,serviceProducer")
+
+    production_json = service_productions.json()
+
+    # Loop thorugh all routes in the RTP TAK. Create vagval in NTJP based on the RTP production information.
+    #       A. productions pointing to COSMIC should be "copied" to NTJP
+    #       B. productions pointing to TakeCare should be added to NTJP pointing to RTP
+    for production in production_json:
+
+        # Find production in the request domain pointing to Capio COSMIC
+        if (production["serviceContract"]["id"] in contracts_ids and production["serviceProducer"]["hsaId"] == cosmic_hsaid):
+            # print(route)
+
+            namespace = production["serviceContract"]["namespace"]
+
+            logiskAdress = {
+                "hsaId": production["logicalAddress"]["logicalAddress"],
+                "beskrivning": production["logicalAddress"]["description"]
+            }
+            
+            cosmic_producer_url = get_producer_url("COSMIC", envir, namespace)
+
+            # Add a include of this logical address
+            if (logiskAdress not in logiskaAdresser):
+                logiskaAdresser.append(logiskAdress)
+
+
+            # Add the include of this vagval. The vagval should point to the cosmic producer.
+            update_vagval_include.append({
+                "tjanstekomponent": cosmic_producer_hsa,
+                "adress": cosmic_producer_url,
+                "logiskAdress": production["logicalAddress"]["logicalAddress"],
+                "tjanstekontrakt": namespace,
+                "rivtaprofil": "RIVTABP21"
+            })
+
+        # Find production in the request domain pointing to TakeCare
+        elif (production["serviceContract"]["id"] in contracts_ids and production["serviceProducer"]["hsaId"] == takecare_hsaid):
+            # print(route)
+
+            namespace = production["serviceContract"]["namespace"]
+
+            logiskAdress = {
+                "hsaId": production["logicalAddress"]["logicalAddress"],
+                "beskrivning": production["logicalAddress"]["description"]
+            }
+            
+            producer_url = get_producer_url("RTP", envir, namespace)
+
+            # Add a include of this logical address
+            if (logiskAdress not in logiskaAdresser):
+                logiskaAdresser.append(logiskAdress)
+
+
+            # Add the include of this vagval. The vagval should point to the cosmic producer.
+            update_vagval_include.append({
+                "tjanstekomponent": rtp_producer_hsa,
+                "adress": producer_url,
+                "logiskAdress": production["logicalAddress"]["logicalAddress"],
+                "tjanstekontrakt": namespace,
+                "rivtaprofil": "RIVTABP21"
+            })
+
+    # Finally, create the files
+    update_include["tjanstekomponenter"] = [
+        {
+            "hsaId": cosmic_hsaid,
+            "beskrivning": cosmic_description
+        },
+        {
+            "hsaId": rtp_hsaid,
+            "beskrivning": rtp_description
+        }
+
+    ]  
+
+    update_include["tjanstekontrakt"] = get_json_contracts()
+    update_include["logiskadresser"] = logiskaAdresser
+    update_include["vagval"] = update_vagval_include
+
+    update = get_header("NTJP", envir)
+    update["inkludera"] = update_include
+
+    printerr(f"Generating UPDATE file for NTJP-{envir} ")
+    print(json.dumps(update, ensure_ascii=False))
+
+        # print(json.dumps(update_include, ensure_ascii=False))
+    # print("here is your checkmark: " + u'\u2713');
+
+##################################################################################################
+
+
+
 def create_rtp_files(envir: str, phase: str) -> None:
     """Will create json files for RTP"""
 
@@ -467,7 +597,7 @@ if (create_sample and (PHASE == "UPDATE" or PHASE == "REMOVE")):
 
 elif (TARGET_TP == "RTP"):
     create_rtp_files(TARGET_ENVIRONMENT, PHASE)
-else:
-    printerr("Not yet implemented")
+elif (TARGET_TP == "NTJP"):
+    create_ntjp_files(TARGET_ENVIRONMENT)
 
 exit()
