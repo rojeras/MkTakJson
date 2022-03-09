@@ -106,14 +106,10 @@ def create_rtp_files(envir: str, phase: str) -> None:
     update = get_header("RTP", envir)
     update_include = {}
     update_vagval_include = []
-    update_vagval_exclude = []
-    update_exclude = {}
 
     rollback = get_header("RTP", envir)
     rollback_include = {}
     rollback_vagval_include = []
-    rollback_vagval_exclude = []
-    rollback_exclude = {}
 
     # Calculate base information
     contracts_ids = get_contracts_ids()
@@ -162,14 +158,6 @@ def create_rtp_files(envir: str, phase: str) -> None:
             # Update
             """During update the producer COSMIC should change to NTJP. Different producer and URL"""
 
-            # The exclude should exclude old routes (vagval) pointing to cosmic
-            update_vagval_exclude.append({
-                "tjanstekomponent": cosmic_producer_hsa,
-                "logiskAdress": production["logicalAddress"]["logicalAddress"],
-                "tjanstekontrakt": namespace,
-                "rivtaprofil": "RIVTABP21"
-            })
-
             ntjp_producer_url = get_producer_url("NTJP", envir, namespace)
 
             # The new routes (vagval) should point to NTJP
@@ -181,16 +169,8 @@ def create_rtp_files(envir: str, phase: str) -> None:
                 "rivtaprofil": "RIVTABP21"
             })
 
-                     ##################################################################
+            ##################################################################
             # Rollback
-            """During rollback the producer NTJP should be changed (back) to COSMIC"""
-            rollback_vagval_exclude.append({
-                "tjanstekomponent": ntjp_producer_hsa,
-                "logiskAdress": production["logicalAddress"]["logicalAddress"],
-                "tjanstekontrakt": namespace,
-                "rivtaprofil": "RIVTABP21"
-            })
-
             cosmic_producer_url = get_producer_url("COSMIC", envir, namespace)
 
             # The new routes (vagval) should point to NTJP
@@ -203,10 +183,6 @@ def create_rtp_files(envir: str, phase: str) -> None:
             })
 
     # Finally, create the files
-
-    update_exclude["vagval"] = update_vagval_exclude
-    rollback_exclude["vagval"] = rollback_vagval_exclude
-
     update_include["tjanstekomponenter"] = [
         {
             "hsaId": cosmic_hsaid,
@@ -231,7 +207,6 @@ def create_rtp_files(envir: str, phase: str) -> None:
 
     if (phase == "UPDATE"):
         update = get_header("RTP", envir)
-        # update["exkludera"] = update_exclude
         update["inkludera"] = update_include
 
         printerr(f"Generating UPDATE file for RTP-{envir} ")
@@ -239,7 +214,6 @@ def create_rtp_files(envir: str, phase: str) -> None:
 
     elif (phase == "ROLLBACK"): 
         rollback = get_header("RTP", envir)
-        # rollback["exkludera"] = rollback_exclude
         rollback["inkludera"] = rollback_include
 
         printerr(f"Generating ROLLBACK for RTP-{envir} ")
