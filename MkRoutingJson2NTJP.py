@@ -1,4 +1,5 @@
 from email import parser
+from http.client import FOUND
 from random import sample
 from datetime import datetime
 import sys
@@ -12,7 +13,6 @@ def printerr(text):
     print(text, file=sys.stderr)
 
 ##################################################################################################
-
 
 def get_header(target_tp, target_envir):
 
@@ -31,8 +31,7 @@ def get_header(target_tp, target_envir):
 
 ##################################################################################################
 
-
-def get_connection_point_id(envir):
+def get_rtp_connection_point_id(envir):
     """Get the connectionPointId of the RTP-QA|PROD"""
 
     response = requests.get(f"{TAKAPI_BASE_URL}/connectionPoints")
@@ -46,7 +45,6 @@ def get_connection_point_id(envir):
     return tp_id
 
 ##################################################################################################
-
 
 def get_contracts_ids():
     """Get the serviceContractIds for the three request contracts"""
@@ -68,21 +66,6 @@ def get_contracts_ids():
 
 ##################################################################################################
 
-
-def service_producer_id(producer):
-
-    response = requests.get(
-        f"{TAKAPI_BASE_URL}/serviceServiceProducers?connectionPointId=7&serviceContractId={contract_ids[0]}&include=logicalAddress%2CphysicalAddress")
-    responseJson = response.json()
-
-    for route in responseJson:
-        print(route)
-
-    return service_component_id
-
-##################################################################################################
-
-
 def dump_service_producers():
     """Will dump the routes to a file as a backup"""
 
@@ -97,203 +80,89 @@ def dump_service_producers():
 ##################################################################################################
 
 
-def create_ntjp_files(envir: str) -> None:
-    """Will create json files for NTJP"""
+def create_json_file(target: str, envir: str, phase: str) -> None:
+    """Will create json file"""
 
-    # Prepare placeholders for update file
-    logiskaAdresser = []
+    current_mappings = MAPPINGS[target]
 
-    update = get_header("NTJP", envir)
-    update_include = {}
-    update_vagval_include = []
+    current_mappings_hsaids = []
+    for key in current_mappings.keys():
+        current_mappings_hsaids.append(PRODUCER_HSA_ID[f"{key}-{envir}"])
 
-    # Calculate base information
-    contracts_ids = get_contracts_ids()
-    tp_id = get_connection_point_id(envir)
-
-    # Producers
-    cosmic_hsaid = PRODUCER_HSA_ID[f"COSMIC-{envir}"]
-    cosmic_description = PRODUCER_DESCRIPTION[f"COSMIC-{envir}"]
-
-    takecare_hsaid = PRODUCER_HSA_ID[f"TAKECARE-{envir}"]
-    takecare_description = PRODUCER_DESCRIPTION[f"TAKECARE-{envir}"]
-
-    rtp_hsaid = PRODUCER_HSA_ID[f"RTP-{envir}"]
-    rtp_description = PRODUCER_DESCRIPTION[f"RTP-{envir}"]
-    
-    ntjp_hsaid = PRODUCER_HSA_ID[f"NTJP-{envir}"]
-    ntjp_description = PRODUCER_DESCRIPTION[f"NTJP-{envir}"]
-
-    if (envir == "QA"):
-        rtp_producer_hsa = PRODUCER_HSA_ID["RTP-QA"]
-        cosmic_producer_hsa = PRODUCER_HSA_ID["COSMIC-QA"]
-    elif(envir == "PROD"):
-        rtp_producer_hsa = PRODUCER_HSA_ID["RTP-PROD"]
-        cosmic_producer_hsa = PRODUCER_HSA_ID["COSMIC-PROD"]
-
-
-    # Get the ServiceProductions for the NTJP QA or PROD TAK
-    service_productions = requests.get(
-        f"{TAKAPI_BASE_URL}/serviceProductions?connectionPointId={tp_id}&include=serviceContract%2ClogicalAddress%2CphysicalAddress,serviceProducer")
-
-    production_json = service_productions.json()
-
-    # Loop thorugh all routes in the RTP TAK. Create vagval in NTJP based on the RTP production information.
-    #       A. productions pointing to COSMIC should be "copied" to NTJP
-    #       B. productions pointing to TakeCare should be added to NTJP pointing to RTP
-    for production in production_json:
-
-        # Find production in the request domain pointing to Capio COSMIC
-        if (production["serviceContract"]["id"] in contracts_ids and production["serviceProducer"]["hsaId"] == cosmic_hsaid):
-            # print(route)
-
-            namespace = production["serviceContract"]["namespace"]
-
-            logiskAdress = {
-                "hsaId": production["logicalAddress"]["logicalAddress"],
-                "beskrivning": production["logicalAddress"]["description"]
-            }
-            
-            cosmic_producer_url = get_producer_url("COSMIC", envir, namespace)
-
-            # Add a include of this logical address
-            if (logiskAdress not in logiskaAdresser):
-                logiskaAdresser.append(logiskAdress)
-
-
-            # Add the include of this vagval. The vagval should point to the cosmic producer.
-            update_vagval_include.append({
-                "tjanstekomponent": cosmic_producer_hsa,
-                "adress": cosmic_producer_url,
-                "logiskAdress": production["logicalAddress"]["logicalAddress"],
-                "tjanstekontrakt": namespace,
-                "rivtaprofil": "RIVTABP21"
-            })
-
-        # Find production in the request domain pointing to TakeCare
-        elif (production["serviceContract"]["id"] in contracts_ids and production["serviceProducer"]["hsaId"] == takecare_hsaid):
-            # print(route)
-
-            namespace = production["serviceContract"]["namespace"]
-
-            logiskAdress = {
-                "hsaId": production["logicalAddress"]["logicalAddress"],
-                "beskrivning": production["logicalAddress"]["description"]
-            }
-            
-            producer_url = get_producer_url("RTP", envir, namespace)
-
-            # Add a include of this logical address
-            if (logiskAdress not in logiskaAdresser):
-                logiskaAdresser.append(logiskAdress)
-
-
-            # Add the include of this vagval. The vagval should point to the cosmic producer.
-            update_vagval_include.append({
-                "tjanstekomponent": rtp_producer_hsa,
-                "adress": producer_url,
-                "logiskAdress": production["logicalAddress"]["logicalAddress"],
-                "tjanstekontrakt": namespace,
-                "rivtaprofil": "RIVTABP21"
-            })
-
-    # Finally, create the files
-    update_include["tjanstekomponenter"] = [
-        {
-            "hsaId": cosmic_hsaid,
-            "beskrivning": cosmic_description
-        },
-        {
-            "hsaId": rtp_hsaid,
-            "beskrivning": rtp_description
-        }
-
-    ]  
-
-    update_include["tjanstekontrakt"] = get_json_contracts()
-    update_include["logiskadresser"] = logiskaAdresser
-    update_include["vagval"] = update_vagval_include
-
-    update = get_header("NTJP", envir)
-    update["inkludera"] = update_include
-
-    printerr(f"Generating UPDATE file for NTJP-{envir} ")
-    print(json.dumps(update, ensure_ascii=False))
-
-        # print(json.dumps(update_include, ensure_ascii=False))
-    # print("here is your checkmark: " + u'\u2713');
-
-##################################################################################################
-
-
-
-def create_rtp_files(envir: str, phase: str) -> None:
-    """Will create json files for RTP"""
+    printerr(current_mappings_hsaids)
 
     # Prepare placeholders for update and rollback files
     logiskaAdresser = []
+    tjanstekomponenter_update = []
+    tjanstekomponenter_rollback = []
 
-    update = get_header("RTP", envir)
+    update = get_header(target, envir)
     update_include = {}
     update_vagval_include = []
 
-    rollback = get_header("RTP", envir)
+    rollback = get_header(target, envir)
     rollback_include = {}
     rollback_vagval_include = []
 
     # Calculate base information
     contracts_ids = get_contracts_ids()
-    tp_id = get_connection_point_id(envir)
-
-    cosmic_hsaid = PRODUCER_HSA_ID[f"COSMIC-{envir}"]
-    cosmic_description = PRODUCER_DESCRIPTION[f"COSMIC-{envir}"]
-
-    ntjp_hsaid = PRODUCER_HSA_ID[f"NTJP-{envir}"]
-    ntjp_description = PRODUCER_DESCRIPTION[f"NTJP-{envir}"]
-
-    if (envir == "QA"):
-        ntjp_producer_hsa = PRODUCER_HSA_ID["NTJP-QA"]
-        cosmic_producer_hsa = PRODUCER_HSA_ID["COSMIC-QA"]
-    elif(envir == "PROD"):
-        ntjp_producer_hsa = PRODUCER_HSA_ID["NTJP-PROD"]
-        cosmic_producer_hsa = PRODUCER_HSA_ID["COSMIC-PROD"]
-
+    tp_id = get_rtp_connection_point_id(envir)
 
     # Get the ServiceProductions for the RTP QA or PROD TAK
     service_productions = requests.get(
         f"{TAKAPI_BASE_URL}/serviceProductions?connectionPointId={tp_id}&include=serviceContract%2ClogicalAddress%2CphysicalAddress,serviceProducer")
-
     production_json = service_productions.json()
-    #service_productions_unicode = requests.utils.get_unicode_from_response(service_productions)
-    #production_json = json.loads(service_productions_unicode)
 
     # Loop thorugh all routes to COSMIC should change to NTJP
     for production in production_json:
 
-        # Find production in the request domain pointing to Capio COSMIC
-        if (production["serviceContract"]["id"] in contracts_ids and production["serviceProducer"]["hsaId"] == cosmic_hsaid):
+        # Remove all productions not refering to the request contracts
+        if (production["serviceContract"]["id"] in contracts_ids):
             # print(route)
 
-            namespace = production["serviceContract"]["namespace"]
+            production_system = ""
+            producer_system = ""
+            found = False
+            # Verify that this production is in the mappings list of systems which should be mapped
+            for key, value in current_mappings.items():
+                if (PRODUCER_HSA_ID[f"{key}-{envir}"] == production["serviceProducer"]["hsaId"]):
+                    production_system = key
+                    producer_system = value
+                    found = True
+            # Iterate if this is not a production that should be mapped
+            if (not found):
+                continue
 
+            printerr(f"production_system={production_system}")
+            printerr(f"producer_system={producer_system}")
+
+            tjanstekomponent_update = {
+                "hsaId": PRODUCER_HSA_ID[f"{producer_system}-{envir}"],
+                "beskrivning": PRODUCER_DESCRIPTION[f"{producer_system}-{envir}"]
+            }
+            if (tjanstekomponent_update not in tjanstekomponenter_update):
+                tjanstekomponenter_update.append(tjanstekomponent_update)
+
+            tjanstekomponent_rollback = {
+                "hsaId": PRODUCER_HSA_ID[f"{production_system}-{envir}"],
+                "beskrivning": PRODUCER_DESCRIPTION[f"{production_system}-{envir}"]
+            }
+            if (tjanstekomponent_rollback not in tjanstekomponenter_rollback):
+                tjanstekomponenter_rollback.append(tjanstekomponent_rollback)
+
+            namespace = production["serviceContract"]["namespace"]
             logiskAdress = {
                 "hsaId": production["logicalAddress"]["logicalAddress"],
                 "beskrivning": production["logicalAddress"]["description"]
             }
-
             if (logiskAdress not in logiskaAdresser):
                 logiskaAdresser.append(logiskAdress)
 
             ##################################################################
             # Update
-            """During update the producer COSMIC should change to NTJP. Different producer and URL"""
-
-            ntjp_producer_url = get_producer_url("NTJP", envir, namespace)
-
-            # The new routes (vagval) should point to NTJP
             update_vagval_include.append({
-                "tjanstekomponent": ntjp_producer_hsa,
-                "adress": ntjp_producer_url,
+                "tjanstekomponent": PRODUCER_HSA_ID[f"{producer_system}-{envir}"],
+                "adress": get_producer_url(producer_system, envir, namespace),
                 "logiskAdress": production["logicalAddress"]["logicalAddress"],
                 "tjanstekontrakt": namespace,
                 "rivtaprofil": "RIVTABP21"
@@ -301,30 +170,17 @@ def create_rtp_files(envir: str, phase: str) -> None:
 
             ##################################################################
             # Rollback
-            cosmic_producer_url = get_producer_url("COSMIC", envir, namespace)
-
-            # The new routes (vagval) should point to NTJP
             rollback_vagval_include.append({
-                "tjanstekomponent": cosmic_producer_hsa,
-                "adress": cosmic_producer_url,
+                "tjanstekomponent": PRODUCER_HSA_ID[f"{production_system}-{envir}"],
+                "adress": get_producer_url(production_system, envir, namespace),
                 "logiskAdress": production["logicalAddress"]["logicalAddress"],
                 "tjanstekontrakt": namespace,
                 "rivtaprofil": "RIVTABP21"
             })
 
-    # Finally, create the files
-    update_include["tjanstekomponenter"] = [
-        {
-            "hsaId": cosmic_hsaid,
-            "beskrivning": cosmic_description
-        },
-        {
-            "hsaId": ntjp_hsaid,
-            "beskrivning": ntjp_description
-        }
-
-    ]
-    rollback_include["tjanstekomponenter"] = update_include["tjanstekomponenter"]
+    # Combine the information
+    update_include["tjanstekomponenter"] = tjanstekomponenter_update
+    rollback_include["tjanstekomponenter"] = tjanstekomponenter_rollback
 
     update_include["tjanstekontrakt"] = get_json_contracts()
     rollback_include["tjanstekontrakt"] = get_json_contracts()
@@ -335,25 +191,25 @@ def create_rtp_files(envir: str, phase: str) -> None:
     update_include["vagval"] = update_vagval_include
     rollback_include["vagval"] = rollback_vagval_include
 
+    # Print out the JSON data
     if (phase == "UPDATE"):
-        update = get_header("RTP", envir)
+        update = get_header(target, envir)
         update["inkludera"] = update_include
 
-        printerr(f"Generating UPDATE file for RTP-{envir} ")
+        printerr(f"Generating UPDATE file for {target}-{envir} ")
         print(json.dumps(update, ensure_ascii=False))
 
-    elif (phase == "ROLLBACK"): 
-        rollback = get_header("RTP", envir)
+    elif (phase == "ROLLBACK"):
+        rollback = get_header(target, envir)
         rollback["inkludera"] = rollback_include
 
-        printerr(f"Generating ROLLBACK for RTP-{envir} ")
+        printerr(f"Generating ROLLBACK for {target}-{envir} ")
         print(json.dumps(rollback, ensure_ascii=False))
 
     # print(json.dumps(update_include, ensure_ascii=False))
     # print("here is your checkmark: " + u'\u2713');
 
 ##################################################################################################
-
 
 def get_json_contracts():
 
@@ -377,7 +233,6 @@ def get_json_contracts():
 
 ##################################################################################################
 
-
 def get_producer_url(producer, envir, namespace):
 
     key = f"{producer}-{envir}"
@@ -393,7 +248,6 @@ def get_producer_url(producer, envir, namespace):
     return PRODUCER_URL[key][ix]
 
 ##################################################################################################
-
 
 def create_sample_files(target_tp, target_envir, phase):
 
@@ -490,14 +344,14 @@ parser = argparse.ArgumentParser()
 
 ARG_ENVIRONMENT = ["prod", "qa"]
 ARG_TARGET = ["ntjp", "rtp"]
-ARG_PHASE = ["update", "remove", "rollback"]
+ARG_PHASE = ["update", "rollback"]
 
 parser.add_argument("-e", "--environment", action="store",
                     help="prod | qa", required=True)
 parser.add_argument("-t", "--target", action="store",
                     help="ntjp | rtp", required=True)
 parser.add_argument("-p", "--phase", action="store",
-                    help="update | remove | rollback", required=True)
+                    help="update | rollback", required=True)
 parser.add_argument("-s", "--sample", action='store_true',
                     help="create sample files")
 parser.set_defaults(sample=False)
@@ -515,6 +369,17 @@ if (environment not in ARG_ENVIRONMENT or target not in ARG_TARGET or phase not 
 
 ##################################################################################################
 # Set up global variables
+
+
+MAPPINGS = {
+    "RTP": {                       # In RTP
+        "COSMIC": "NTJP"           # productions refering to COSMIC should get vagval to NTJP
+    },
+    "NTJP": {                      # In NTJP
+        "TAKECARE": "RTP",         # production refering to TakeCare should get vagval to RTP
+        "COSMIC": "COSMIC"         # productions refering to COSMIC should get vagval to COSMIC
+    }
+}
 
 SOURCE_TAK_PLATFORM = "SLL"
 SOURCE_TAK_ENVIRONMENT = environment.upper()
@@ -592,12 +457,11 @@ SERVICE_CONTRACT_NAMESPACE = {
 
 ##################################################################################################
 # Main program switch
-if (create_sample and (PHASE == "UPDATE" or PHASE == "REMOVE")):
+if (create_sample):
     create_sample_files(TARGET_TP, TARGET_ENVIRONMENT, PHASE)
-
-elif (TARGET_TP == "RTP"):
-    create_rtp_files(TARGET_ENVIRONMENT, PHASE)
-elif (TARGET_TP == "NTJP"):
-    create_ntjp_files(TARGET_ENVIRONMENT)
+elif (TARGET_TP == "NTJP" and PHASE == "ROLLBACK"):
+    printerr("rollback not allowed for NTJP target")
+else:
+    create_json_file(TARGET_TP, TARGET_ENVIRONMENT, PHASE)
 
 exit()
