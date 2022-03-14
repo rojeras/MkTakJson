@@ -31,54 +31,6 @@ def get_header(target_tp, target_envir):
 
 ##################################################################################################
 
-def get_rtp_connection_point_id(envir):
-    """Get the connectionPointId of the RTP-QA|PROD"""
-
-    response = requests.get(f"{TAKAPI_BASE_URL}/connectionPoints")
-    responseJson = response.json()
-
-    tp_id = 0
-    for tp in responseJson:
-        if (tp["platform"] == "SLL" and tp["environment"] == envir):
-            tp_id = tp["id"]
-
-    return tp_id
-
-##################################################################################################
-
-def get_contracts_ids():
-    """Get the serviceContractIds for the three request contracts"""
-
-    contract_namespaces = ["urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1",
-                           "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1",
-                           "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1"]
-
-    response = requests.get(f"{TAKAPI_BASE_URL}/serviceContracts")
-    responseJson = response.json()
-
-    contracts_ids = []
-
-    for contract in responseJson:
-        if (contract["namespace"] in contract_namespaces):
-            contracts_ids.append(contract["id"])
-
-    return contracts_ids
-
-##################################################################################################
-
-def dump_service_producers():
-    """Will dump the routes to a file as a backup"""
-
-    contract_ids = get_contracts_ids()
-
-    response = requests.get(f"{TAKAPI_BASE_URL}/serviceProductions")
-    responseJson = response.json()
-
-    for route in responseJson:
-        print(route)
-
-##################################################################################################
-
 
 def create_json_file(target: str, envir: str, phase: str) -> None:
     """Will create json file"""
@@ -89,7 +41,7 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
     for key in current_mappings.keys():
         current_mappings_hsaids.append(PRODUCER_HSA_ID[f"{key}-{envir}"])
 
-    printerr(current_mappings_hsaids)
+    # printerr(current_mappings_hsaids)
 
     # Prepare placeholders for update and rollback files
     logiskaAdresser = []
@@ -104,21 +56,23 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
     rollback_include = {}
     rollback_vagval_include = []
 
-    # Calculate base information
-    contracts_ids = get_contracts_ids()
-    tp_id = get_rtp_connection_point_id(envir)
-
     # Get the ServiceProductions for the RTP QA or PROD TAK
-    service_productions = requests.get(
-        f"{TAKAPI_BASE_URL}/serviceProductions?connectionPointId={tp_id}&include=serviceContract%2ClogicalAddress%2CphysicalAddress,serviceProducer")
-    production_json = service_productions.json()
+    # service_productions = requests.get( f"{TAKAPI_BASE_URL}/serviceProductions?connectionPointId={tp_id}&include=serviceContract%2ClogicalAddress%2CphysicalAddress,serviceProducer")
+    # production_json = service_productions.json()
+
+    production_json = json.load(SERVICE_PRODUCTION_FILE)
 
     # Loop thorugh all routes to COSMIC should change to NTJP
     for production in production_json:
 
         # Remove all productions not refering to the request contracts
-        if (production["serviceContract"]["id"] in contracts_ids):
-            # print(route)
+        if (
+            production["serviceContract"]["namespace"].startswith("urn:riv:clinicalprocess:activity:request:ProcessRequest") and
+            production["connectionPoint"]["platform"] == "SLL" and
+            production["connectionPoint"]["environment"] == envir
+            ): 
+            
+            # rinterr(production)
 
             production_system = ""
             producer_system = ""
@@ -133,8 +87,8 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
             if (not found):
                 continue
 
-            printerr(f"production_system={production_system}")
-            printerr(f"producer_system={producer_system}")
+            #printerr(f"production_system={production_system}")
+            #printerr(f"producer_system={producer_system}")
 
             tjanstekomponent_update = {
                 "hsaId": PRODUCER_HSA_ID[f"{producer_system}-{envir}"],
@@ -352,8 +306,8 @@ parser.add_argument("-t", "--target", action="store",
                     help="ntjp | rtp", required=True)
 parser.add_argument("-p", "--phase", action="store",
                     help="update | rollback", required=True)
-parser.add_argument("-s", "--sample", action='store_true',
-                    help="create sample files")
+parser.add_argument("-s", "--sample", action='store_true', help="create sample files")
+parser.add_argument("filename", nargs=1, type=argparse.FileType('r'))
 parser.set_defaults(sample=False)
 
 args = parser.parse_args()
@@ -362,6 +316,7 @@ environment = args.environment.lower()
 target = args.target.lower()
 phase = args.phase.lower()
 create_sample = args.sample
+service_productions_file = args.filename[0]
 
 if (environment not in ARG_ENVIRONMENT or target not in ARG_TARGET or phase not in ARG_PHASE):
     parser.print_help()
@@ -386,6 +341,7 @@ SOURCE_TAK_ENVIRONMENT = environment.upper()
 TARGET_TP = target.upper()
 TARGET_ENVIRONMENT = SOURCE_TAK_ENVIRONMENT
 PHASE = phase.upper()
+SERVICE_PRODUCTION_FILE = service_productions_file
 
 PRODUCER_HSA_ID = {"COSMIC-QA": "SE5565189692-B05",
                    "COSMIC-PROD": "SE5565189692-B03",
