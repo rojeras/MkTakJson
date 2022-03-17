@@ -9,9 +9,7 @@ Generate BS JSON files
     `pip3 install requests`
 
 ## Use
-1. Download the input file from Ineras TAK-api:
-
-    `curl -X GET "http://api.ntjp.se/coop/api/v1/serviceProductions?include=connectionPoint,logicalAddress,serviceContract,serviceProducer,physicalAddress" -H "accept: application/json" > prods.json`
+1. Download the input file from Ineras TAK-api.
 
 1. Run program with parameter `-h` to see required parameters.
 
