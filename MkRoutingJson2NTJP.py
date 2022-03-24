@@ -14,6 +14,7 @@ def printerr(text):
 
 ##################################################################################################
 
+
 def get_header(target_tp, target_envir):
 
     plattform = f'{target_tp}-{target_envir}'
@@ -70,8 +71,8 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
             production["serviceContract"]["namespace"].startswith("urn:riv:clinicalprocess:activity:request:ProcessRequest") and
             production["connectionPoint"]["platform"] == "SLL" and
             production["connectionPoint"]["environment"] == envir
-            ): 
-            
+        ):
+
             # rinterr(production)
 
             production_system = ""
@@ -87,8 +88,8 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
             if (not found):
                 continue
 
-            #printerr(f"production_system={production_system}")
-            #printerr(f"producer_system={producer_system}")
+            # printerr(f"production_system={production_system}")
+            # printerr(f"producer_system={producer_system}")
 
             tjanstekomponent_update = {
                 "hsaId": PRODUCER_HSA_ID[f"{producer_system}-{envir}"],
@@ -165,6 +166,7 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
 
 ##################################################################################################
 
+
 def get_json_contracts():
 
     return [
@@ -187,6 +189,7 @@ def get_json_contracts():
 
 ##################################################################################################
 
+
 def get_producer_url(producer, envir, namespace):
 
     key = f"{producer}-{envir}"
@@ -202,6 +205,7 @@ def get_producer_url(producer, envir, namespace):
     return PRODUCER_URL[key][ix]
 
 ##################################################################################################
+
 
 def create_sample_files(target_tp, target_envir, phase):
 
@@ -306,7 +310,8 @@ parser.add_argument("-t", "--target", action="store",
                     help="ntjp | rtp", required=True)
 parser.add_argument("-p", "--phase", action="store",
                     help="update | rollback", required=True)
-parser.add_argument("-s", "--sample", action='store_true', help="create sample files")
+parser.add_argument("-s", "--sample", action='store_true',
+                    help="create sample files")
 parser.add_argument("filename", nargs=1, type=argparse.FileType('r'))
 parser.set_defaults(sample=False)
 
@@ -361,46 +366,53 @@ PRODUCER_DESCRIPTION = {"COSMIC-QA": "Capio AB -- Cosmic -- St Görans sjukhus",
                         "RTP-QA": "Region Stockholm -- Tjänsteplattform som tjänsteproducent -- Tjänsteproducent fr o m 2021-09-22, ersätter ""...-A2G4"" som producent!",
                         "RTP-PROD": "Region Stockholm -- Tjänsteplattform som tjänsteproducent -- Tjänsteproducent fr o m 2021-09-22, ersätter ""...-7P35"" som producent!"}
 
-PRODUCER_URL = {"COSMIC-QA": [
-    "https://testcosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequest",
-    "https://testcosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequestConfirmation",
-    "https://testcosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequestOutcome"
-],
+PRODUCER_URL = {
+    "COSMIC-QA": [
+        "https://testcosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequest",
+        "https://testcosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequestConfirmation",
+        "https://testcosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequestOutcome"
+    ],
     "COSMIC-PROD": [
-    "https://cosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequest",
-    "https://cosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequestConfirmation",
-    "https://cosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequestOutcome"
-],
+        "https://cosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequest",
+        "https://cosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequestConfirmation",
+        "https://cosmic.capiostgoran.sjunet.org/EReferralWebservice/ProcessRequestOutcome"
+    ],
     "TAKECARE-QA": [
-    "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-    "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-    "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21"
-],
+        "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+        "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+        "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21"
+    ],
     "TAKECARE-PROD": [
-    "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-    "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-    "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-],
+        "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+        "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+        "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+    ],
     "NTJP-QA": [
-    "https://qa.esb.ntjp.se/vp",
-    "https://qa.esb.ntjp.se/vp",
-    "https://qa.esb.ntjp.se/vp"
-],
+        "https://qa.esb.ntjp.se/vp",
+        "https://qa.esb.ntjp.se/vp",
+        "https://qa.esb.ntjp.se/vp"
+    ],
     "NTJP-PROD": [
-    "https://esb.ntjp.se/vp",
-    "https://esb.ntjp.se/vp",
-    "https://esb.ntjp.se/vp"
-],
+        "https://esb.ntjp.se/vp",
+        "https://esb.ntjp.se/vp",
+        "https://esb.ntjp.se/vp"
+    ],
     "RTP-QA": [
-    "https://qa.esb.rtp.sll.se:443/vp/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-    "https://qa.esb.rtp.sll.se:443/vp/clinicalprocess/activity/request/ProcessRequestConfirmation/1/rivtabp21",
-    "https://qa.esb.rtp.sll.se:443/vp/clinicalprocess/activity/request/ProcessRequestOutcome/1/rivtabp21"
-],
+        "https://rtp.qa.internet.regionstockholm.se/vp/clinicalprocess/activity/request/ProcessRequest/1",
+        "https://rtp.qa.internet.regionstockholm.se/vp/clinicalprocess/activity/request/ProcessRequestConfirmation/1",
+        "https://rtp.qa.internet.regionstockholm.se/vp/clinicalprocess/activity/request/ProcessRequestOutcome/1"
+        # "https://qa.esb.rtp.sll.se:443/vp/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+        # "https://qa.esb.rtp.sll.se:443/vp/clinicalprocess/activity/request/ProcessRequestConfirmation/1/rivtabp21",
+        # "https://qa.esb.rtp.sll.se:443/vp/clinicalprocess/activity/request/ProcessRequestOutcome/1/rivtabp21"
+    ],
     "RTP-PROD": [
-    "https://prod.esb.rtp.sll.se:443/vp/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-    "https://prod.esb.rtp.sll.se:443/vp/clinicalprocess/activity/request/ProcessRequestConfirmation/1/rivtabp21",
-    "https://prod.esb.rtp.sll.se:443/vp/clinicalprocess/activity/request/ProcessRequestOutcome/1/rivtabp21"
-]
+        "https://rtp.prod.internet.regionstockholm.se/vp/clinicalprocess/activity/request/ProcessRequest/1",
+        "https://rtp.prod.internet.regionstockholm.se/vp/clinicalprocess/activity/request/ProcessRequestConfirmation/1",
+        "https://rtp.prod.internet.regionstockholm.se/vp/clinicalprocess/activity/request/ProcessRequestOutcome/1"
+        # "https://prod.esb.rtp.sll.se:443/vp/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+        # "https://prod.esb.rtp.sll.se:443/vp/clinicalprocess/activity/request/ProcessRequestConfirmation/1/rivtabp21",
+        # "https://prod.esb.rtp.sll.se:443/vp/clinicalprocess/activity/request/ProcessRequestOutcome/1/rivtabp21"
+    ]
 }
 
 TAKAPI_BASE_URL = "http://api.ntjp.se/coop/api/v1"
