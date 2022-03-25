@@ -1,5 +1,6 @@
 # bs-json
-Generate BS JSON files 
+Generate BS JSON files.
+Initially created for the integration of Region Stockholm TakeCare and Capio COSMIC to the national e-request service. 
 
 ## Install
 1. Clone this repo
