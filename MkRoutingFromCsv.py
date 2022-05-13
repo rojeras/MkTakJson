@@ -93,9 +93,6 @@ def create_json_file() -> None:
     print(json.dumps(content, ensure_ascii=False, indent=4))
 
 
-    # print(json.dumps(update_include, ensure_ascii=False))
-    # print("here is your checkmark: " + u'\u2713');
-
 ##################################################################################################
 
 
@@ -118,108 +115,6 @@ def get_json_contracts():
             "majorVersion": 1
         }
     ]
-
-##################################################################################################
-
-
-def get_producer_url(producer, envir, namespace):
-
-    key = f"{producer}-{envir}"
-
-    ix = -1
-    if (namespace == "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1"):
-        ix = 0
-    elif (namespace == "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1"):
-        ix = 1
-    elif (namespace == "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1"):
-        ix = 2
-
-    return PRODUCER_URL[key][ix]
-
-##################################################################################################
-
-
-def create_sample_files(target_tp, target_envir, phase):
-
-    printerr(f"Sample {phase} file for {target_tp}-{target_envir} \n")
-
-    body = get_header(target_tp, target_envir)
-
-    if (phase == "UPDATE"):
-        include = {}
-        include["tjanstekontrakt"] = get_json_contracts()
-        include["tjanstekomponenter"] = get_sample_service_components()
-        include["logiskadresser"] = get_sample_logical_addresses()
-        include["vagval"] = get_sample_routes()
-
-        body["inkludera"] = include
-
-    elif (phase == "REMOVE"):
-        exclude = {}
-        # exclude["tjanstekontrakt"] = get_json_contracts()
-        # exclude["tjanstekomponenter"] = get_sample_service_components()
-        # exclude["logiskadresser"] = get_sample_logical_addresses()
-        exclude["vagval"] = get_sample_routes()
-
-        body["exkludera"] = exclude
-
-    json_body = json.dumps(body)
-    print(json_body)
-
-##################################################################################################
-
-
-def get_sample_logical_addresses():
-
-    return [
-        {
-            "hsaId": "FEJK-MOTTAGNING-SLL-HSA-ID",
-            "beskrivning": "FEJK-MOTTAGNING-SLL"
-        }
-    ]
-
-##################################################################################################
-
-
-def get_sample_service_components():
-
-    return [
-        {
-            "hsaId": "SE2321000016-XXXX",
-            "beskrivning": "Region Stockholm -- FEJK -- Remissystem"
-        }
-    ]
-
-##################################################################################################
-
-
-def get_sample_routes():
-
-    return [
-        {
-            "adress": "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-            "logiskAdress": "FEJK-MOTTAGNING-SLL-HSA-ID",
-            "tjanstekontrakt": "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1",
-            "rivtaprofil": "RIVTABP21",
-            "tjanstekomponent": "SE2321000016-XXXX"
-        },
-        {
-            "adress": "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-            "logiskAdress": "FEJK-MOTTAGNING-SLL-HSA-ID",
-            "tjanstekontrakt": "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1",
-            "rivtaprofil": "RIVTABP21",
-            "tjanstekomponent": "SE2321000016-XXXX"
-        },
-        {
-            "adress": "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-            "logiskAdress": "FEJK-MOTTAGNING-SLL-HSA-ID",
-            "tjanstekontrakt": "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1",
-            "rivtaprofil": "RIVTABP21",
-            "tjanstekomponent": "SE2321000016-XXXX"
-        }
-    ]
-
-##################################################################################################
 
 
 ##################################################################################################
