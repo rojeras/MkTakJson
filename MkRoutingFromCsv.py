@@ -3,6 +3,7 @@ import sys
 import argparse
 import json
 import csv
+
 ##################################################################################################
 
 """
@@ -11,15 +12,16 @@ for the three request contracts.
 It is only expected to be used for SLL-PROD.
 """
 
+
 ##################################################################################################
 def printerr(text):
     print(text, file=sys.stderr)
+
 
 ##################################################################################################
 
 
 def get_header():
-
     plattform = "SLL-PROD"
     now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+0100")
 
@@ -31,6 +33,7 @@ def get_header():
         "utforare": "Region Stockholm - Forvaltningsobjekt Informationsinfrastruktur",
         "genomforandeTidpunkt": now,
     }
+
 
 ##################################################################################################
 
@@ -45,8 +48,7 @@ def create_json_file() -> None:
     with open(CSV_FILE) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=';')
         for row in csv_reader:
-
-            la_hsaid = row[0].strip()            # Pick up from file
+            la_hsaid = row[0].strip()  # Pick up from file
             la_description = row[1].strip()  # Pick up from file
 
             logiskAdress = {
@@ -94,10 +96,37 @@ def create_json_file() -> None:
 
 
 ##################################################################################################
+"""
+class bs_json:
+    def __int__(self, plattform, executor="Region Stockholm - Forvaltningsobjekt Informationsinfrastruktur"):
+        self.plattform = plattform
+        self.executor = executor
+        self.include = {}
+        self.exclude = {}
+        self.include_routing = []
+        self.exclude_routing = []
+        self.include_logicaladdresses = []
+        self.exclude_logicaladdresses = []
+
+
+
+    def get_header(self):
+        now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+0100")
+
+        return {
+            "plattform": self.plattform,
+            "formatVersion": "1.0",
+            "version": "1",
+            "bestallningsTidpunkt": now,
+            "utforare": self.executor,
+            "genomforandeTidpunkt": now,
+        }
+
+"""
+##################################################################################################
 
 
 def get_json_contracts():
-
     return [
         {
             "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1",
@@ -122,7 +151,7 @@ def get_json_contracts():
 ##################################################################################################
 # Parse arguments
 parser = argparse.ArgumentParser()
-#parser.add_argument("filename", nargs=1, type=argparse.FileType('r'))
+# parser.add_argument("filename", nargs=1, type=argparse.FileType('r'))
 parser.add_argument("filename", nargs=1)
 args = parser.parse_args()
 
