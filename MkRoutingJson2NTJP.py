@@ -1,9 +1,5 @@
-from email import parser
-from http.client import FOUND
-from random import sample
 from datetime import datetime
 import sys
-import requests
 import argparse
 import json
 
@@ -63,7 +59,7 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
 
     production_json = json.load(SERVICE_PRODUCTION_FILE)
 
-    # Loop thorugh all routes to COSMIC should change to NTJP
+    # Loop through all routes to COSMIC should change to NTJP
     for production in production_json:
 
         # Remove all productions not refering to the request contracts
