@@ -3,6 +3,7 @@ import sys
 import argparse
 import json
 import csv
+from BsJson import BsJson, BsJsonSection
 
 ##################################################################################################
 
@@ -34,7 +35,7 @@ def get_header():
         "genomforandeTidpunkt": now,
     }
 ##################################################################################################
-# """
+"""
 class BsJson:
     def __init__(self, plattform, executor="Region Stockholm - Forvaltningsobjekt Informationsinfrastruktur"):
         self.plattform = plattform
@@ -150,7 +151,7 @@ class BsJsonSection:
             "vagval": self.routings,
         }
 
-    # """
+"""
 
 
 
