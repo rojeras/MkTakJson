@@ -137,3 +137,5 @@ dmypy.json
 *.csv#
 
 results/april-results/NTJP-PROD_update1.json.zip
+
+results/
