@@ -2,31 +2,28 @@ from datetime import datetime
 import sys
 import argparse
 import json
+from BsJson import BsJson, BsJsonSection
 
 
 ##################################################################################################
 def printerr(text):
     print(text, file=sys.stderr)
 
-##################################################################################################
-
-
-def get_header(target_tp, target_envir):
-
-    plattform = f'{target_tp}-{target_envir}'
-
-    now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+0100")
-
-    return {
-        "plattform": plattform,
-        "formatVersion": "1.0",
-        "version": "1",
-        "bestallningsTidpunkt": now,
-        "utforare": "Region Stockholm - Forvaltningsobjekt Informationsinfrastruktur",
-        "genomforandeTidpunkt": now,
-    }
 
 ##################################################################################################
+
+def get_producer_url(producer, envir, namespace):
+    key = f"{producer}-{envir}"
+
+    ix = -1
+    if (namespace == "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1"):
+        ix = 0
+    elif (namespace == "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1"):
+        ix = 1
+    elif (namespace == "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1"):
+        ix = 2
+
+    return PRODUCER_URL[key][ix]
 
 
 def create_json_file(target: str, envir: str, phase: str) -> None:
@@ -41,6 +38,7 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
     # printerr(current_mappings_hsaids)
 
     # Prepare placeholders for update and rollback files
+    """
     logiskaAdresser = []
     tjanstekomponenter_update = []
     tjanstekomponenter_rollback = []
@@ -52,10 +50,16 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
     rollback = get_header(target, envir)
     rollback_include = {}
     rollback_vagval_include = []
+    """
 
     # Get the ServiceProductions for the RTP QA or PROD TAK
     # service_productions = requests.get( f"{TAKAPI_BASE_URL}/serviceProductions?connectionPointId={tp_id}&include=serviceContract%2ClogicalAddress%2CphysicalAddress,serviceProducer")
     # production_json = service_productions.json()
+
+    include_section = BsJsonSection()
+
+    for contract in SERVICE_CONTRACTS:
+        include_section.add_contract(contract["namnrymd"], contract["beskrivning"])
 
     production_json = json.load(SERVICE_PRODUCTION_FILE)
 
@@ -64,12 +68,13 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
 
         # Remove all productions not refering to the request contracts
         if (
-            production["serviceContract"]["namespace"].startswith("urn:riv:clinicalprocess:activity:request:ProcessRequest") and
-            production["connectionPoint"]["platform"] == "SLL" and
-            production["connectionPoint"]["environment"] == envir
+                production["serviceContract"]["namespace"].startswith(
+                    "urn:riv:clinicalprocess:activity:request:ProcessRequest") and
+                production["connectionPoint"]["platform"] == "SLL" and
+                production["connectionPoint"]["environment"] == envir
         ):
 
-            # rinterr(production)
+            # printerr(production)
 
             production_system = ""
             producer_system = ""
@@ -87,208 +92,80 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
             # printerr(f"production_system={production_system}")
             # printerr(f"producer_system={producer_system}")
 
-            tjanstekomponent_update = {
-                "hsaId": PRODUCER_HSA_ID[f"{producer_system}-{envir}"],
-                "beskrivning": PRODUCER_DESCRIPTION[f"{producer_system}-{envir}"]
-            }
-            if (tjanstekomponent_update not in tjanstekomponenter_update):
-                tjanstekomponenter_update.append(tjanstekomponent_update)
-
-            tjanstekomponent_rollback = {
-                "hsaId": PRODUCER_HSA_ID[f"{production_system}-{envir}"],
-                "beskrivning": PRODUCER_DESCRIPTION[f"{production_system}-{envir}"]
-            }
-            if (tjanstekomponent_rollback not in tjanstekomponenter_rollback):
-                tjanstekomponenter_rollback.append(tjanstekomponent_rollback)
-
             namespace = production["serviceContract"]["namespace"]
-            logiskAdress = {
-                "hsaId": production["logicalAddress"]["logicalAddress"],
-                "beskrivning": production["logicalAddress"]["description"]
-            }
-            if (logiskAdress not in logiskaAdresser):
-                logiskaAdresser.append(logiskAdress)
 
-            ##################################################################
-            # Update
-            update_vagval_include.append({
-                "tjanstekomponent": PRODUCER_HSA_ID[f"{producer_system}-{envir}"],
-                "adress": get_producer_url(producer_system, envir, namespace),
-                "logiskAdress": production["logicalAddress"]["logicalAddress"],
-                "tjanstekontrakt": namespace,
-                "rivtaprofil": "RIVTABP21"
-            })
+            include_section.add_logicalAddress(
+                production["logicalAddress"]["logicalAddress"],
+                production["logicalAddress"]["description"]
+            )
 
-            ##################################################################
-            # Rollback
-            rollback_vagval_include.append({
-                "tjanstekomponent": PRODUCER_HSA_ID[f"{production_system}-{envir}"],
-                "adress": get_producer_url(production_system, envir, namespace),
-                "logiskAdress": production["logicalAddress"]["logicalAddress"],
-                "tjanstekontrakt": namespace,
-                "rivtaprofil": "RIVTABP21"
-            })
+            if phase == "UPDATE":
 
-    # Combine the information
-    update_include["tjanstekomponenter"] = tjanstekomponenter_update
-    rollback_include["tjanstekomponenter"] = tjanstekomponenter_rollback
+                include_section.add_component(
+                    PRODUCER_HSA_ID[f"{producer_system}-{envir}"],
+                    PRODUCER_DESCRIPTION[f"{producer_system}-{envir}"]
+                )
 
-    update_include["tjanstekontrakt"] = get_json_contracts()
-    rollback_include["tjanstekontrakt"] = get_json_contracts()
+                include_section.add_routing(
+                    PRODUCER_HSA_ID[f"{producer_system}-{envir}"],
+                    get_producer_url(producer_system, envir, namespace),
+                    production["logicalAddress"]["logicalAddress"],
+                    namespace
+                )
 
-    update_include["logiskadresser"] = logiskaAdresser
-    rollback_include["logiskadresser"] = logiskaAdresser
+            elif phase == "ROLLBACK":
+                include_section.add_component(
+                    PRODUCER_HSA_ID[f"{production_system}-{envir}"],
+                    PRODUCER_DESCRIPTION[f"{production_system}-{envir}"]
+                )
 
-    update_include["vagval"] = update_vagval_include
-    rollback_include["vagval"] = rollback_vagval_include
+                include_section.add_routing(
+                    PRODUCER_HSA_ID[f"{production_system}-{envir}"],
+                    get_producer_url(production_system, envir, namespace),
+                    production["logicalAddress"]["logicalAddress"],
+                    namespace
+                )
+
+            else:
+                printerr(f"phase must be UPDATE or ROLLBACK, not {phase}!")
+                exit(1)
 
     # Print out the JSON data
+
+    content = BsJson(TARGET_TP_ENVIR)
+    content.add_section("include", include_section)
+    content.print_json()
+
+    """
     if (phase == "UPDATE"):
+        update_include["tjanstekomponenter"] = tjanstekomponenter_update
+        update_include["tjanstekontrakt"] = get_json_contracts()
+        update_include["logiskadresser"] = logiskaAdresser
+        update_include["vagval"] = update_vagval_include
         update = get_header(target, envir)
         update["inkludera"] = update_include
 
         printerr(f"Generating UPDATE file for {target}-{envir} ")
-        print(json.dumps(update, ensure_ascii=False, indent=4))
+        print(json.dumps(update, ensure_ascii=False))
 
     elif (phase == "ROLLBACK"):
+        rollback_include["tjanstekomponenter"] = tjanstekomponenter_rollback
+        rollback_include["tjanstekontrakt"] = get_json_contracts()
+        rollback_include["logiskadresser"] = logiskaAdresser
+        rollback_include["vagval"] = rollback_vagval_include
         rollback = get_header(target, envir)
         rollback["inkludera"] = rollback_include
 
         printerr(f"Generating ROLLBACK for {target}-{envir} ")
-        print(json.dumps(rollback, ensure_ascii=False, indent=4))
-
+        print(json.dumps(rollback, ensure_ascii=False))
+    """
     # print(json.dumps(update_include, ensure_ascii=False))
     # print("here is your checkmark: " + u'\u2713');
 
-##################################################################################################
 
-
-def get_json_contracts():
-
-    return [
-        {
-            "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1",
-            "beskrivning": "Submission of a request to a healtcare facility",
-            "majorVersion": 1
-        },
-        {
-            "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1",
-            "beskrivning": "Submission of a request to a healtcare facility",
-            "majorVersion": 1
-        },
-        {
-            "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1",
-            "beskrivning": "Submission of a request to a healtcare facility",
-            "majorVersion": 1
-        }
-    ]
-
-##################################################################################################
-
-
-def get_producer_url(producer, envir, namespace):
-
-    key = f"{producer}-{envir}"
-
-    ix = -1
-    if (namespace == "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1"):
-        ix = 0
-    elif (namespace == "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1"):
-        ix = 1
-    elif (namespace == "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1"):
-        ix = 2
-
-    return PRODUCER_URL[key][ix]
-
-##################################################################################################
-
-
-def create_sample_files(target_tp, target_envir, phase):
-
-    printerr(f"Sample {phase} file for {target_tp}-{target_envir} \n")
-
-    body = get_header(target_tp, target_envir)
-
-    if (phase == "UPDATE"):
-        include = {}
-        include["tjanstekontrakt"] = get_json_contracts()
-        include["tjanstekomponenter"] = get_sample_service_components()
-        include["logiskadresser"] = get_sample_logical_addresses()
-        include["vagval"] = get_sample_routes()
-
-        body["inkludera"] = include
-
-    elif (phase == "REMOVE"):
-        exclude = {}
-        # exclude["tjanstekontrakt"] = get_json_contracts()
-        # exclude["tjanstekomponenter"] = get_sample_service_components()
-        # exclude["logiskadresser"] = get_sample_logical_addresses()
-        exclude["vagval"] = get_sample_routes()
-
-        body["exkludera"] = exclude
-
-    json_body = json.dumps(body)
-    print(json_body)
-
-##################################################################################################
-
-
-def get_sample_logical_addresses():
-
-    return [
-        {
-            "hsaId": "FEJK-MOTTAGNING-SLL-HSA-ID",
-            "beskrivning": "FEJK-MOTTAGNING-SLL"
-        }
-    ]
-
-##################################################################################################
-
-
-def get_sample_service_components():
-
-    return [
-        {
-            "hsaId": "SE2321000016-XXXX",
-            "beskrivning": "Region Stockholm -- FEJK -- Remissystem"
-        }
-    ]
-
-##################################################################################################
-
-
-def get_sample_routes():
-
-    return [
-        {
-            "adress": "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-            "logiskAdress": "FEJK-MOTTAGNING-SLL-HSA-ID",
-            "tjanstekontrakt": "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1",
-            "rivtaprofil": "RIVTABP21",
-            "tjanstekomponent": "SE2321000016-XXXX"
-        },
-        {
-            "adress": "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-            "logiskAdress": "FEJK-MOTTAGNING-SLL-HSA-ID",
-            "tjanstekontrakt": "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1",
-            "rivtaprofil": "RIVTABP21",
-            "tjanstekomponent": "SE2321000016-XXXX"
-        },
-        {
-            "adress": "https://test-api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-            "logiskAdress": "FEJK-MOTTAGNING-SLL-HSA-ID",
-            "tjanstekontrakt": "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1",
-            "rivtaprofil": "RIVTABP21",
-            "tjanstekomponent": "SE2321000016-XXXX"
-        }
-    ]
-
-##################################################################################################
-
-
-##################################################################################################
+################################################################################################
 #                                 Main Program
-##################################################################################################
+################################################################################################
 # Parse arguments
 parser = argparse.ArgumentParser()
 
@@ -328,18 +205,19 @@ if (environment not in ARG_ENVIRONMENT or target not in ARG_TARGET or phase not 
 
 
 MAPPINGS = {
-    "RTP": {                       # In RTP
-        "COSMIC": "NTJP"           # productions refering to COSMIC should get vagval to NTJP
+    "RTP": {  # In RTP
+        "COSMIC": "NTJP"  # productions refering to COSMIC should get vagval to NTJP
     },
-    "NTJP": {                      # In NTJP
-        "TAKECARE": "RTP",         # production refering to TakeCare should get vagval to RTP
-        "COSMIC": "COSMIC"         # productions refering to COSMIC should get vagval to COSMIC
+    "NTJP": {  # In NTJP
+        "TAKECARE": "RTP",  # production refering to TakeCare should get vagval to RTP
+        "COSMIC": "COSMIC"  # productions refering to COSMIC should get vagval to COSMIC
     }
 }
 
 SOURCE_TAK_PLATFORM = "SLL"
 SOURCE_TAK_ENVIRONMENT = environment.upper()
 TARGET_TP = target.upper()
+TARGET_TP_ENVIR = f"{TARGET_TP}-{environment.upper()}"
 TARGET_ENVIRONMENT = SOURCE_TAK_ENVIRONMENT
 PHASE = phase.upper()
 SERVICE_PRODUCTION_FILE = service_productions_file
@@ -419,6 +297,23 @@ SERVICE_CONTRACT_NAMESPACE = {
     "ProcessRequestOutcome": "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1"
 }
 
+SERVICE_CONTRACTS = [
+    {
+        "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1",
+        "beskrivning": "Submission of a request to a healtcare facility",
+        "majorVersion": 1
+    },
+    {
+        "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1",
+        "beskrivning": "Submission of a request to a healtcare facility",
+        "majorVersion": 1
+    },
+    {
+        "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1",
+        "beskrivning": "Submission of a request to a healtcare facility",
+        "majorVersion": 1
+    },
+]
 ##################################################################################################
 # Main program switch
 if (create_sample):

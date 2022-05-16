@@ -44,7 +44,6 @@ class BsJson:
         if self.exclude:
             content["exkludera"] = BsJsonSection.get_json(self.exclude)
 
-        printerr(f"Generating UPDATE file")
         print(json.dumps(content, ensure_ascii=False, indent=4))
 
 
@@ -96,12 +95,15 @@ class BsJsonSection:
             self.contracts.append(contract)
 
     def add_routing(self,
-                    component,
-                    address,
-                    logicalAddress,
-                    namespace,
-                    rivtaProfile="RIVTABP21"):
+                    component: object,
+                    address: object,
+                    logicalAddress: object,
+                    namespace: object,
+                    rivtaProfile: object = "RIVTABP21") -> object:
+        """
 
+        :rtype: object
+        """
         routing = {
             "tjanstekomponent": component,
             "adress": address,
