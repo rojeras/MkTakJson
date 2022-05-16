@@ -1,4 +1,3 @@
-from datetime import datetime
 import sys
 import argparse
 import json
@@ -35,27 +34,6 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
     for key in current_mappings.keys():
         current_mappings_hsaids.append(PRODUCER_HSA_ID[f"{key}-{envir}"])
 
-    # printerr(current_mappings_hsaids)
-
-    # Prepare placeholders for update and rollback files
-    """
-    logiskaAdresser = []
-    tjanstekomponenter_update = []
-    tjanstekomponenter_rollback = []
-
-    update = get_header(target, envir)
-    update_include = {}
-    update_vagval_include = []
-
-    rollback = get_header(target, envir)
-    rollback_include = {}
-    rollback_vagval_include = []
-    """
-
-    # Get the ServiceProductions for the RTP QA or PROD TAK
-    # service_productions = requests.get( f"{TAKAPI_BASE_URL}/serviceProductions?connectionPointId={tp_id}&include=serviceContract%2ClogicalAddress%2CphysicalAddress,serviceProducer")
-    # production_json = service_productions.json()
-
     include_section = BsJsonSection()
 
     for contract in SERVICE_CONTRACTS:
@@ -66,15 +44,13 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
     # Loop through all routes to COSMIC should change to NTJP
     for production in production_json:
 
-        # Remove all productions not refering to the request contracts
+        # Remove all productions not referring to the request contracts
         if (
                 production["serviceContract"]["namespace"].startswith(
                     "urn:riv:clinicalprocess:activity:request:ProcessRequest") and
                 production["connectionPoint"]["platform"] == "SLL" and
                 production["connectionPoint"]["environment"] == envir
         ):
-
-            # printerr(production)
 
             production_system = ""
             producer_system = ""
@@ -85,12 +61,10 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
                     production_system = key
                     producer_system = value
                     found = True
+
             # Iterate if this is not a production that should be mapped
             if (not found):
                 continue
-
-            # printerr(f"production_system={production_system}")
-            # printerr(f"producer_system={producer_system}")
 
             namespace = production["serviceContract"]["namespace"]
 
@@ -131,36 +105,9 @@ def create_json_file(target: str, envir: str, phase: str) -> None:
                 exit(1)
 
     # Print out the JSON data
-
     content = BsJson(TARGET_TP_ENVIR)
     content.add_section("include", include_section)
     content.print_json()
-
-    """
-    if (phase == "UPDATE"):
-        update_include["tjanstekomponenter"] = tjanstekomponenter_update
-        update_include["tjanstekontrakt"] = get_json_contracts()
-        update_include["logiskadresser"] = logiskaAdresser
-        update_include["vagval"] = update_vagval_include
-        update = get_header(target, envir)
-        update["inkludera"] = update_include
-
-        printerr(f"Generating UPDATE file for {target}-{envir} ")
-        print(json.dumps(update, ensure_ascii=False))
-
-    elif (phase == "ROLLBACK"):
-        rollback_include["tjanstekomponenter"] = tjanstekomponenter_rollback
-        rollback_include["tjanstekontrakt"] = get_json_contracts()
-        rollback_include["logiskadresser"] = logiskaAdresser
-        rollback_include["vagval"] = rollback_vagval_include
-        rollback = get_header(target, envir)
-        rollback["inkludera"] = rollback_include
-
-        printerr(f"Generating ROLLBACK for {target}-{envir} ")
-        print(json.dumps(rollback, ensure_ascii=False))
-    """
-    # print(json.dumps(update_include, ensure_ascii=False))
-    # print("here is your checkmark: " + u'\u2713');
 
 
 ################################################################################################
@@ -177,10 +124,10 @@ ARG_ENVIRONMENT = ["prod", "qa"]
 ARG_TARGET = ["ntjp", "rtp"]
 ARG_PHASE = ["update", "rollback"]
 
-parser.add_argument("-e", "--environment", action="store",
-                    help="prod | qa", required=True)
 parser.add_argument("-t", "--target", action="store",
                     help="ntjp | rtp", required=True)
+parser.add_argument("-e", "--environment", action="store",
+                    help="prod | qa", required=True)
 parser.add_argument("-p", "--phase", action="store",
                     help="update | rollback", required=True)
 parser.add_argument("-s", "--sample", action='store_true',
@@ -304,22 +251,20 @@ SERVICE_CONTRACTS = [
         "majorVersion": 1
     },
     {
-        "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1",
+        "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1",
         "beskrivning": "Submission of a request to a healtcare facility",
         "majorVersion": 1
     },
     {
-        "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1",
+        "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1",
         "beskrivning": "Submission of a request to a healtcare facility",
         "majorVersion": 1
     },
 ]
 ##################################################################################################
 # Main program switch
-if (create_sample):
-    create_sample_files(TARGET_TP, TARGET_ENVIRONMENT, PHASE)
-elif (TARGET_TP == "NTJP" and PHASE == "ROLLBACK"):
-    printerr("rollback not allowed for NTJP target")
+if (TARGET_TP == "NTJP" and PHASE == "ROLLBACK"):
+    printerr("rollback is not implemented, nor needed, for NTJP target")
 else:
     create_json_file(TARGET_TP, TARGET_ENVIRONMENT, PHASE)
 

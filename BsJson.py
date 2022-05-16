@@ -117,8 +117,8 @@ class BsJsonSection:
     def get_json(self):
 
         return {
-            "tjanstekontrakt": self.contracts,
             "tjanstekomponenter": self.components,
+            "tjanstekontrakt": self.contracts,
             "logiskadresser": self.logicalAddresses,
             "anropsbehorigheter": self.authorities,
             "vagval": self.routings,
