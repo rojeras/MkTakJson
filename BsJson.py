@@ -18,7 +18,7 @@ class BsJson:
     ----------
     plattform : str
         The name of the TP instance (example "RTP-PROD"). Mapped to "plattform" in the JSON file.
-    excutor : str
+    executor : str
         Name of the organization doing the TAK change, mapped to "utforare" in the JSON file.
     include : BsJsonSection
         An instance of BsJsonSection which contains the include section.
