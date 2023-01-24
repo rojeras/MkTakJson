@@ -2,14 +2,26 @@ import sys
 import argparse
 import json
 from BsJson import BsJson, BsJsonSection
+##################################################################################################
+"""
+This script was used in the spring 2022 to reroute requests (remisser) to and from Capio Cosmic
+to go through NTJP. Based on the old TAK config in RTP it generated TAK JSON files for the new 
+configuration in both NTJP and RTP. It also generated rollback files for RTP (not needed for
+NTJP). 
+Input to the script was a dump from the TAK-api. The dump is obtained by dumping the output from
+takapiProductions.sh to file and provide the filename as an argument to this program.
 
+Since the change of configuration was a one time effort this script is not expected to be used 
+in the future. But, there might be a need for something similar, where this code can serve as 
+inspiration.
+
+LEO 2023-01-24
+"""
 
 ##################################################################################################
 def printerr(text):
     print(text, file=sys.stderr)
 
-
-##################################################################################################
 
 def get_producer_url(producer, envir, namespace):
     key = f"{producer}-{envir}"
