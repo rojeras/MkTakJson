@@ -59,7 +59,7 @@ def get_la_from_takaip():
 parser = argparse.ArgumentParser()
 parser.add_argument("-r", "--replace", action='store_true',
                     help="replace logical address descriptions from TAK-api")
-parser.add_argument("filename", nargs=1)
+parser.add_argument("filename", nargs=1, help="name of CSV file")
 args = parser.parse_args()
 
 REPLACE_LA_DESCRIPTION = args.replace
