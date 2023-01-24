@@ -27,7 +27,7 @@ def get_la_from_takaip():
     RTP-PROD and so on.
     The reason for this is that a CSV list of units (logical addresses) from TakeCare truncate the unit name after 25
     characters. We do not want to use those truncated names if the LA is already defined in a TAK. The user of this
-    script can control this behaviour with the "-r" flag.  
+    script can control this behaviour with the "-r" flag.
     """
 
     # Ensure order to get LA from TP with highest rank
