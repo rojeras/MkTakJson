@@ -9,7 +9,7 @@ from BsJson import BsJson, BsJsonSection
 """
 This script reads logical addresses from a CSV file and create BS Json with routing statements
 for the three request contracts. 
-It is currently expected to be used for SLL-PROD.
+It is currently expected to be used to create routing statements for SLL-PROD and NTJP-PROD.
 """
 
 
