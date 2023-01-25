@@ -9,9 +9,10 @@ from BsJson import BsJson, BsJsonSection
 ##################################################################################################
 
 """
-This script reads logical addresses from a CSV file and create BS Json with routing statements
-for the three request contracts. 
-It is currently expected to be used to create routing statements for SLL-PROD and NTJP-PROD.
+This script reads logical addresses from a CSV file and create BS JSON with routing statements
+for the three request contracts. It can generate a JSON file for NTJP-PROD and RTP-PROD. 
+
+The logic to create the actual JSON file can be found in BsJson.py.
 """
 
 
@@ -58,7 +59,7 @@ def get_la_from_takaip():
 #                                 Main Program
 ##################################################################################################
 # Set up global variables
-# Definition to be used in the TAK of RTP-PROD
+# Definition of producer information related to the two targets; NTJP-PROD and RTP-PROD
 PRODUCER_HSA_ID = {
     "RTP-PROD": "SE2321000016-F835",
     "NTJP-PROD": "SE2321000016-FH3P"
@@ -75,7 +76,7 @@ PRODUCER_URL = {
     "NTJP-PROD": "https://esb.ntjp.se/vp"
 }
 
-# Definition of the three request contracts
+# Definition of the three request contracts (the same for all target plattforms)
 SERVICE_CONTRACTS = [
     {
         "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1",
@@ -100,7 +101,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-r", "--replace", action='store_true',
                     help="replace logical address descriptions from TAK-api")
 parser.add_argument("-t", "--target", action='store', type=str, required=True,
-                    help="target must be one of NTJP-PROD och RTP-PROD")
+                    help="target must be one of NTJP-PROD or RTP-PROD")
 parser.add_argument("filename", nargs=1, help="name of CSV file")
 args = parser.parse_args()
 
@@ -111,10 +112,7 @@ if not (TARGET_TP == "NTJP-PROD" or TARGET_TP =="RTP-PROD"):
     parser.print_help()
     exit(1)
 
-print(TARGET_TP)
-
 CSV_FILE = args.filename[0]
-
 
 ##################################################################################################
 # And the action
@@ -157,6 +155,7 @@ with open(CSV_FILE) as csv_file:
 # BsJson is defined in BsJson.py
 content = BsJson(TARGET_TP)
 content.add_section("include", include_section)
+
 # The output JSON is written to stdout
 content.print_json()
 

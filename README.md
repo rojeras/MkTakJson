@@ -1,6 +1,9 @@
 # Funktion
 Detta script skapar en BS JSON-fil med vägvalsbeställningar. Det förutsätts användas 
-för E-remisskontrakten. Indata är en semikolon-avgränsad CSV-fil enligt:
+för E-remisskontrakten för att skapa vägval i NTJP-PROD eller RTP-PROD. Flaggan -t/--target används för att ange tjänsteplattform. 
+
+Indata är en semikolon-avgränsad CSV-fil enligt:
+
 * Kolumn 1: Logisk adress
 * Kolumn 2: Namn på enhet
 
@@ -88,12 +91,15 @@ OBS. Modulen BsJson.py är ett bibliotek som delas mellan bs-json och analyze-ta
 # Användning
 ```
 bs-json git:(master) ✗ python3 MkRoutingFromCsv.py -h
-usage: MkRoutingFromCsv.py [-h] [-r] filename
+sage: MkRoutingFromCsv.py [-h] [-r] -t TARGET filename
 
 positional arguments:
-  filename       name of CSV file
+  filename              name of CSV file
 
 options:
-  -h, --help     show this help message and exit
-  -r, --replace  replace logical address descriptions from TAK-api
+  -h, --help            show this help message and exit
+  -r, --replace         replace logical address descriptions from TAK-api
+  -t TARGET, --target TARGET
+                        target must be one of NTJP-PROD or RTP-PROD
+
 ```
