@@ -1,3 +1,5 @@
+#!/bin/env python
+
 import sys
 import argparse
 import csv
@@ -7,9 +9,10 @@ from BsJson import BsJson, BsJsonSection
 ##################################################################################################
 
 """
-This script reads logical addresses from a CSV file and create BS Json with routing statements
-for the three request contracts. 
-It is currently expected to be used for SLL-PROD.
+This script reads logical addresses from a CSV file and create BS JSON with routing statements
+for the three request contracts. It can generate a JSON file for NTJP-PROD and RTP-PROD. 
+
+The logic to create the actual JSON file can be found in BsJson.py.
 """
 
 
@@ -38,7 +41,7 @@ def get_la_from_takaip():
     # Define priority order
     tp_ids = [ntjp_prod_id, rtp_prod_id, ntjp_qa_id, rtp_qa_id]
 
-    logical_addess_descriptions = {}
+    logical_address_descriptions = {}
 
     # Obtain all LA for one TAK at the time and store in the dict
     for tp_id in tp_ids:
@@ -46,33 +49,34 @@ def get_la_from_takaip():
         for la in response.json():
             la_id = la["logicalAddress"]
             la_desc = la["description"]
-            if la_id not in logical_addess_descriptions:
-                logical_addess_descriptions[la_id] = la_desc
+            if la_id not in logical_address_descriptions:
+                logical_address_descriptions[la_id] = la_desc
 
-    return logical_addess_descriptions
+    return logical_address_descriptions
 
 
 ##################################################################################################
 #                                 Main Program
 ##################################################################################################
-# Parse arguments
-parser = argparse.ArgumentParser()
-parser.add_argument("-r", "--replace", action='store_true',
-                    help="replace logical address descriptions from TAK-api")
-parser.add_argument("filename", nargs=1, help="name of CSV file")
-args = parser.parse_args()
-
-REPLACE_LA_DESCRIPTION = args.replace
-CSV_FILE = args.filename[0]
-
-##################################################################################################
 # Set up global variables
-# The current implementation presumes that all generated routing is for RTP-PROD and points to TakeCare (via EDI)
-PRODUCER_HSA_ID = "SE2321000016-F835"
-PRODUCER_DESCRIPTION = "Region Stockholm -- EDI som tjänsteproducent -- Ny tjänsteproducent fr o m 2021-10-12, har ersatt tidigare producent ""...4HR3""."
-PRODUCER_URL = "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21"
+# Definition of producer information related to the two targets; NTJP-PROD and RTP-PROD
+PRODUCER_HSA_ID = {
+    "RTP-PROD": "SE2321000016-F835",
+    "NTJP-PROD": "SE2321000016-FH3P"
+}
 
-# Definition of the three request contracts
+PRODUCER_DESCRIPTION = {
+    "RTP-PROD": "Region Stockholm -- EDI som tjänsteproducent -- Ny tjänsteproducent fr o m 2021-10-12, har ersatt tidigare producent ""...4HR3"".",
+    "NTJP-PROD": "Region Stockholm -- Tjänsteplattform som tjänsteproducent -- Tjänsteproducent fr o m 2021-09-22, ersätter ""...-7P35"" som producent!"
+}
+
+# Both producers have one single URL which is used for all three contracts
+PRODUCER_URL = {
+    "RTP-PROD": "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+    "NTJP-PROD": "https://esb.ntjp.se/vp"
+}
+
+# Definition of the three request contracts (the same for all target plattforms)
 SERVICE_CONTRACTS = [
     {
         "namnrymd": "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1",
@@ -90,6 +94,26 @@ SERVICE_CONTRACTS = [
         "majorVersion": 1
     },
 ]
+
+##################################################################################################
+# Parse arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("-r", "--replace", action='store_true',
+                    help="replace logical address descriptions from TAK-api")
+parser.add_argument("-t", "--target", action='store', type=str, required=True,
+                    help="target must be one of NTJP-PROD or RTP-PROD")
+parser.add_argument("filename", nargs=1, help="name of CSV file")
+args = parser.parse_args()
+
+REPLACE_LA_DESCRIPTION = args.replace
+TARGET_TP = args.target.upper()
+
+if not (TARGET_TP == "NTJP-PROD" or TARGET_TP =="RTP-PROD"):
+    parser.print_help()
+    exit(1)
+
+CSV_FILE = args.filename[0]
+
 ##################################################################################################
 # And the action
 
@@ -122,15 +146,16 @@ with open(CSV_FILE) as csv_file:
 
         # Add a routing (vagval) statement for each of the three contracts
         for contract in SERVICE_CONTRACTS:
-            include_section.add_routing(PRODUCER_HSA_ID,
-                                        PRODUCER_URL,
+            include_section.add_routing(PRODUCER_HSA_ID[TARGET_TP],
+                                        PRODUCER_URL[TARGET_TP],
                                         la_hsaid,
                                         contract["namnrymd"]
                                         )
 
 # BsJson is defined in BsJson.py
-content = BsJson("SLL-PROD")
+content = BsJson(TARGET_TP)
 content.add_section("include", include_section)
+
 # The output JSON is written to stdout
 content.print_json()
 
