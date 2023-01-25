@@ -11,9 +11,35 @@ Se exempel i SampleCsv.csv
 
 Övrig information för att skapa JSON-beställningarna är hårdkodade i scriptet.
 
-Flaggan "-r" instruerar scriptet att i första hand använda de enhetsnamn som finns i TAK - om enheten är TAK-ad (för något tjänstekontrakt) sedan tidigare. 
+Flaggan "-r" instruerar scriptet att i första hand använda de befintliga enhetsnamn som finns i (någon) TAK - om enheten är TAK-ad (för något tjänstekontrakt) sedan tidigare. Dessa erhålles genom att scriptet hämtar logiska adresser från TAK-api.  
 
 OBS. Modulen BsJson.py är ett bibliotek som delas mellan bs-json och analyze-tak (identiska filer används).
+
+# Installation
+1. Klona detta repo
+2. Sätt upp pythonmiljön. Det är ofta en god idé att använda en virtuell miljö:
+
+   ```
+   python3 -m venv venv
+   source venv/bin/activate
+   python3 -m pip install requests
+   ```
+
+# Användning
+```
+bs-json git:(master) ✗ python3 MkRoutingFromCsv.py -h
+sage: MkRoutingFromCsv.py [-h] [-r] -t TARGET filename
+
+positional arguments:
+  filename              name of CSV file
+
+options:
+  -h, --help            show this help message and exit
+  -r, --replace         replace logical address descriptions from TAK-api
+  -t TARGET, --target TARGET
+                        target must be one of NTJP-PROD or RTP-PROD
+
+```
 
 ## Exempel på utdata
 ```
@@ -75,31 +101,4 @@ OBS. Modulen BsJson.py är ett bibliotek som delas mellan bs-json och analyze-ta
         ]
     }
 }
-```
-
-# Installation
-1. Klona detta repo
-2. Sätt upp pythonmiljön. Det är ofta en god idé att använda en virtuell miljö:
-    ```
-   python3 -m venv venv
-   source venv/bin/activate
-   python3 -m pip install requests
-   ```
-3. Scriptet behöver tillgång till en exekverande mysql/mariadb TAK-databas. En användare med enbart läsrättigheter rekommenderas starkt! 
-4. Exekvera `MkRoutingFromCsv.py`. Information om nödvändiga flaggor skrivs ut.
- 
-# Användning
-```
-bs-json git:(master) ✗ python3 MkRoutingFromCsv.py -h
-sage: MkRoutingFromCsv.py [-h] [-r] -t TARGET filename
-
-positional arguments:
-  filename              name of CSV file
-
-options:
-  -h, --help            show this help message and exit
-  -r, --replace         replace logical address descriptions from TAK-api
-  -t TARGET, --target TARGET
-                        target must be one of NTJP-PROD or RTP-PROD
-
 ```
