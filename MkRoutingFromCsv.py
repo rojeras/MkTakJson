@@ -72,8 +72,16 @@ PRODUCER_DESCRIPTION = {
 
 # Both producers have one single URL which is used for all three contracts
 PRODUCER_URL = {
-    "RTP-PROD": "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
-    "NTJP-PROD": "https://esb.ntjp.se/vp"
+    "RTP-PROD": {
+        "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1": "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+        "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1": "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
+        "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1": "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21"
+    },
+    "NTJP-PROD": {
+        "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1": "https://rtp.prod.internet.regionstockholm.se/vp/clinicalprocess/activity/request/ProcessRequest/1",
+        "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1": "https://rtp.prod.internet.regionstockholm.se/vp/clinicalprocess/activity/request/ProcessRequestConfirmation/1",
+        "urn:riv:clinicalprocess:activity:request:ProcessRequestOutcomeResponder:1": "https://rtp.prod.internet.regionstockholm.se/vp/clinicalprocess/activity/request/ProcessRequestOutcome/1"
+    }
 }
 
 # Definition of the three request contracts (the same for all target plattforms)
@@ -147,7 +155,7 @@ with open(CSV_FILE) as csv_file:
         # Add a routing (vagval) statement for each of the three contracts
         for contract in SERVICE_CONTRACTS:
             include_section.add_routing(PRODUCER_HSA_ID[TARGET_TP],
-                                        PRODUCER_URL[TARGET_TP],
+                                        PRODUCER_URL[TARGET_TP][contract["namnrymd"]],
                                         la_hsaid,
                                         contract["namnrymd"]
                                         )
