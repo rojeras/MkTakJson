@@ -61,18 +61,18 @@ def get_la_from_takaip():
 # Set up global variables
 # Definition of producer information related to the two targets; NTJP-PROD and RTP-PROD
 PRODUCER_HSA_ID = {
-    "RTP-PROD": "SE2321000016-F835",
+    "SLL-PROD": "SE2321000016-F835",
     "NTJP-PROD": "SE2321000016-FH3P"
 }
 
 PRODUCER_DESCRIPTION = {
-    "RTP-PROD": "Region Stockholm -- EDI som tjänsteproducent -- Ny tjänsteproducent fr o m 2021-10-12, har ersatt tidigare producent ""...4HR3"".",
+    "SLL-PROD": "Region Stockholm -- EDI som tjänsteproducent -- Ny tjänsteproducent fr o m 2021-10-12, har ersatt tidigare producent ""...4HR3"".",
     "NTJP-PROD": "Region Stockholm -- Tjänsteplattform som tjänsteproducent -- Tjänsteproducent fr o m 2021-09-22, ersätter ""...-7P35"" som producent!"
 }
 
 # Both producers have one single URL which is used for all three contracts
 PRODUCER_URL = {
-    "RTP-PROD": {
+    "SLL-PROD": {
         "urn:riv:clinicalprocess:activity:request:ProcessRequestResponder:1":
             "https://api.integration.regionstockholm.se/rivta/clinicalprocess/activity/request/ProcessRequest/1/rivtabp21",
         "urn:riv:clinicalprocess:activity:request:ProcessRequestConfirmationResponder:1":
@@ -115,14 +115,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-r", "--replace", action='store_true',
                     help="replace logical address descriptions from TAK-api")
 parser.add_argument("-t", "--target", action='store', type=str, required=True,
-                    help="target must be one of NTJP-PROD or RTP-PROD")
+                    help="target must be one of NTJP-PROD or SLL-PROD")
 parser.add_argument("filename", nargs=1, help="name of CSV file")
 args = parser.parse_args()
 
 REPLACE_LA_DESCRIPTION = args.replace
 TARGET_TP = args.target.upper()
 
-if not (TARGET_TP == "NTJP-PROD" or TARGET_TP =="RTP-PROD"):
+if not (TARGET_TP == "NTJP-PROD" or TARGET_TP =="SLL-PROD"):
     parser.print_help()
     exit(1)
 
