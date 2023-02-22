@@ -144,7 +144,7 @@ include_section = BsJsonSection()
 for contract in SERVICE_CONTRACTS:
     include_section.add_contract(contract["namnrymd"], contract["beskrivning"])
 
-with open(CSV_FILE) as csv_file:
+with open(CSV_FILE, encoding='utf-8-sig') as csv_file:
     # Read and parse all rows in the CSV file
     csv_reader = csv.reader(csv_file, delimiter=';')
 
