@@ -26,7 +26,7 @@ class BsJson:
         An instance of BsJsonSection which contains the exclude section.
     """
 
-    def __init__(self, plattform, executor="Region Stockholm - Forvaltningsobjekt Informationsinfrastruktur"):
+    def __init__(self, plattform, executor="Inera ICC"):
         """Constructor"""
         self.plattform = plattform
         self.executor = executor

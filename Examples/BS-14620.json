@@ -1,0 +1,58 @@
+{
+  "plattform": "NTJP-PROD",
+  "formatVersion": "1.0",
+  "version": "1",
+  "bestallningsTidpunkt": "2023-02-28T06:40:11+0000",
+  "utforare": "Lars Erik Röjerås",
+  "kommentar": "Detta en första manuell beställning för att få fram en mall inför en masstakning.  Den kan få gå igenom och utföras. Referens och beställare är Anna Rajkowska.\nJag använder mitt SITHS-kort från SLL - därav mailadressen.",
+  "genomforandeTidpunkt": "2023-02-28T06:40:11+0000",
+  "inkludera": {
+    "anropsbehorigheter": [
+      {
+        "logiskAdress": "SE165565594230-WEBCERT02001",
+        "tjanstekontrakt": "urn:riv:clinicalprocess:healthcond:certificate:SendMessageToCareResponder:2",
+        "tjanstekonsument": "SE5565594230-B31"
+      }
+    ],
+    "vagval": [
+      {
+        "adress": "https://webcert.ntjp.intygstjanster.se/services/send-message-to-care/v2.0",
+        "logiskAdress": "SE165565594230-WEBCERT02001",
+        "tjanstekontrakt": "urn:riv:clinicalprocess:healthcond:certificate:SendMessageToCareResponder:2",
+        "rivtaprofil": "RIVTABP21",
+        "tjanstekomponent": "SE5565594230-B8N"
+      }
+    ],
+    "tjanstekontrakt": [
+      {
+        "namnrymd": "urn:riv:clinicalprocess:healthcond:certificate:SendMessageToCareResponder:2",
+        "beskrivning": "SendMessageToCare",
+        "majorVersion": 2
+      }
+    ],
+    "logiskadresser": [
+      {
+        "hsaId": "SE165565594230-WEBCERT02001",
+        "beskrivning": "Inera WebCert - Privatläkare 2001"
+      }
+    ],
+    "tjanstekomponenter": [
+      {
+        "hsaId": "SE5565594230-B31",
+        "beskrivning": "Inera AB -- Intygstjänster -- Intygstjänsten och Mina Intyg"
+      },
+      {
+        "hsaId": "SE5565594230-B8N",
+        "beskrivning": "Inera AB -- Intygstjänster -- Webcert"
+      }
+    ]
+  },
+  "exkludera": {
+    "anropsbehorigheter": [
+
+    ],
+    "vagval": [
+
+    ]
+  }
+}
