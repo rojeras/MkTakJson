@@ -3,7 +3,6 @@
 import sys
 import argparse
 import csv
-import requests
 from BsJson import BsJson, BsJsonSection
 
 ##################################################################################################
@@ -33,6 +32,14 @@ PRODUCER_HSA_ID = {
 
 PRODUCER_DESCRIPTION = {
     "NTJP-PROD": "Inera AB -- Intygstjänster -- Webcert"
+}
+
+CONSUMER_HSA_ID = {
+    "NTJP-PROD" : "SE5565594230-B31"
+}
+
+CONSUMER_DESCRIPTION = {
+    "NTJP-PROD" : "Inera AB -- Intygstjänster -- Intygstjänsten och Mina Intyg"
 }
 
 # Both producers have one single URL which is used for all three contracts
@@ -68,6 +75,9 @@ CSV_FILE = args.filename[0]
 
 # BsJsonSection is defined in BsJson.py
 include_section = BsJsonSection()
+
+include_section.add_component(PRODUCER_HSA_ID[TARGET_TP], PRODUCER_DESCRIPTION[TARGET_TP])
+include_section.add_component(CONSUMER_HSA_ID[TARGET_TP], CONSUMER_DESCRIPTION[TARGET_TP])
 
 # Add the contracts to the include section
 for contract in SERVICE_CONTRACTS:
